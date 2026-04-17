@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotas do Escadão – Comida di Buteco 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --verde:   #1a4a2e;
+  --verde2:  #2d7a4f;
+  --amarelo: #f5c842;
+  --creme:   #fdf8ee;
+  --terra:   #c97d3a;
+  --escuro:  #0f1a0f;
+  --sidebar-w: 340px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; }
+
+/* ── LAYOUT SHELL ── */
+body { display: flex; flex-direction: column; background: var(--escuro); }
+
+header {
+  height: 58px; flex-shrink: 0;
+  background: var(--verde);
+  border-bottom: 2px solid var(--amarelo);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 14px;
+  z-index: 1001; position: relative;
+}
+.logo-mark {
+  width: 34px; height: 34px; background: var(--amarelo);
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 17px; flex-shrink: 0;
+}
+.logo-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; font-weight: 900; color: var(--creme);
+  letter-spacing: -0.3px; flex: 1;
+}
+.logo-text span { color: var(--amarelo); }
+.header-tag {
+  font-size: 11px; color: rgba(253,248,238,.55);
+  background: rgba(255,255,255,.08);
+  padding: 4px 10px; border-radius: 100px; white-space: nowrap;
+}
+
+.main-area {
+  flex: 1; display: flex; overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: #0f1a0f;
+  border-right: 1px solid rgba(245,200,66,.15);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transition: transform .3s ease;
+  z-index: 900;
+}
+
+.sidebar-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px; font-weight: 700; color: var(--creme);
+  margin-bottom: 6px;
+}
+.sidebar-sub {
+  font-size: 12px; color: rgba(253,248,238,.45); line-height: 1.4;
+}
+
+/* ── SEARCH ── */
+.search-wrap {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
+}
+.search-inner {
+  position: relative;
+}
+.search-inner input {
+  width: 100%; padding: 10px 14px 10px 38px;
+  border-radius: 10px; border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.07); color: var(--creme);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none;
+}
+.search-inner input::placeholder { color: rgba(253,248,238,.35); }
+.search-inner input:focus { border-color: rgba(245,200,66,.5); background: rgba(255,255,255,.1); }
+.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; }
+.search-dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+  background: #1c2b1c; border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px; overflow: hidden; z-index: 99;
+  display: none; max-height: 240px; overflow-y: auto;
+}
+.search-dropdown.open { display: block; }
+.sd-item {
+  padding: 10px 14px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  transition: background .15s;
+}
+.sd-item:hover { background: rgba(255,255,255,.06); }
+.sd-item-name { font-size: 13px; font-weight: 500; color: var(--creme); }
+.sd-item-sub { font-size: 11px; color: rgba(253,248,238,.4); margin-top: 2px; }
+
+/* ── TABS ── */
+.tabs {
+  display: flex; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.tab-btn {
+  flex: 1; padding: 11px 8px;
+  background: none; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500;
+  color: rgba(253,248,238,.45);
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.tab-btn.active { color: var(--amarelo); border-bottom-color: var(--amarelo); }
+.tab-btn:hover:not(.active) { color: rgba(253,248,238,.7); }
+
+/* ── ROUTE LIST ── */
+.panel { flex: 1; overflow-y: auto; }
+.panel::-webkit-scrollbar { width: 4px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+.panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
+
+.panel-section { padding: 12px 16px 4px; }
+
+.route-card {
+  margin-bottom: 8px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+  cursor: pointer; overflow: hidden;
+  transition: border-color .2s, background .2s;
+}
+.route-card:hover { background: rgba(255,255,255,.07); }
+.route-card.active {
+  border-color: var(--amarelo);
+  background: rgba(245,200,66,.06);
+}
+
+.route-card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+}
+.route-emoji { font-size: 20px; flex-shrink: 0; }
+.route-info { flex: 1; min-width: 0; }
+.route-name {
+  font-size: 13px; font-weight: 600; color: var(--creme);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.route-bairros {
+  font-size: 11px; color: rgba(253,248,238,.4);
+  margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.route-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.route-km { font-size: 12px; font-weight: 600; color: var(--amarelo); }
+.route-count { font-size: 10px; color: rgba(253,248,238,.4); }
+.route-color-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+
+.route-expanded {
+  padding: 0 14px 12px; display: none;
+}
+.route-card.active .route-expanded { display: block; }
+.route-desc { font-size: 12px; color: rgba(253,248,238,.55); line-height: 1.5; margin-bottom: 10px; }
+
+.route-bar-list { list-style: none; }
+.route-bar-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+  cursor: pointer;
+}
+.route-bar-item:last-child { border-bottom: none; }
+.route-bar-item:hover .rbl-name { color: var(--amarelo); }
+.rbl-num {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: white; flex-shrink: 0;
+}
+.rbl-name { font-size: 12px; font-weight: 500; color: var(--creme); flex: 1; min-width: 0; }
+.rbl-bairro { font-size: 10px; color: rgba(253,248,238,.35); white-space: nowrap; }
+
+/* ── BAR LIST TAB ── */
+.bar-list-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  transition: background .15s;
+}
+.bar-list-item:hover { background: rgba(255,255,255,.04); }
+.bli-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.bli-info { flex: 1; min-width: 0; }
+.bli-nome { font-size: 13px; font-weight: 500; color: var(--creme);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bli-sub { font-size: 11px; color: rgba(253,248,238,.38); margin-top: 1px; }
+
+/* ── MAP ── */
+#map { flex: 1; z-index: 100; }
+
+/* ── POPUP ── */
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important; padding: 0 !important;
+  overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,.45) !important;
+  border: none !important; width: 300px !important;
+}
+.leaflet-popup-content { margin: 0 !important; width: 300px !important; }
+.leaflet-popup-tip-container { display: none; }
+
+.popup-img {
+  width: 100%; height: 168px; object-fit: cover;
+  background: #ddd; display: block;
+}
+.popup-img-placeholder {
+  width: 100%; height: 168px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+}
+.popup-body { padding: 14px 16px 16px; background: white; }
+.popup-route-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 600; color: white;
+  padding: 3px 9px; border-radius: 100px; margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.popup-bar-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px; font-weight: 700; color: #111; margin-bottom: 4px; line-height: 1.2;
+}
+.popup-petisco-nome {
+  font-size: 13px; font-weight: 600; color: var(--terra); margin-bottom: 6px;
+}
+.popup-desc {
+  font-size: 12px; color: #555; line-height: 1.55; margin-bottom: 10px;
+}
+.popup-addr {
+  display: flex; align-items: flex-start; gap: 5px;
+  font-size: 11px; color: #888;
+  padding-top: 8px; border-top: 1px solid #f0f0f0;
+}
+
+/* ── FLOATING BADGE ── */
+.float-badge {
+  position: absolute; bottom: 18px; right: 18px; z-index: 800;
+  background: var(--verde); border: 2px solid var(--amarelo);
+  color: var(--creme); padding: 6px 16px; border-radius: 100px;
+  font-size: 12px; font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4); pointer-events: none;
+}
+.float-badge strong { color: var(--amarelo); }
+
+/* ── MOBILE SIDEBAR TOGGLE ── */
+.sidebar-toggle {
+  display: none; position: absolute;
+  top: 68px; left: 10px; z-index: 1000;
+  background: var(--verde); border: 2px solid var(--amarelo);
+  color: var(--creme); border-radius: 10px; padding: 8px 12px;
+  font-size: 18px; cursor: pointer; line-height: 1;
+}
+
+/* Leaflet zoom */
+.leaflet-control-zoom {
+  border: none !important; border-radius: 12px !important; overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3) !important; margin-right: 14px !important; margin-bottom: 60px !important;
+}
+.leaflet-control-zoom a {
+  background: white !important; color: var(--verde) !important;
+  width: 32px !important; height: 32px !important; line-height: 32px !important;
+  font-size: 18px !important; border: none !important; font-weight: 300 !important;
+}
+.leaflet-control-zoom a:hover { background: var(--verde) !important; color: white !important; }
+.leaflet-control-attribution { font-size: 9px !important; }
+
+@media (max-width: 700px) {
+  .sidebar { position: absolute; top: 58px; left: 0; bottom: 0; transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-toggle { display: block; }
+  .main-area { position: relative; }
+  #map { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">🍺</div>
+  <div class="logo-text">Rotas do <span>Escadão</span></div>
+  <div class="header-tag">Comida di Buteco 2026 · Rio de Janeiro</div>
+</header>
+
+<button class="sidebar-toggle" id="sidebarToggle" title="Menu">☰</button>
+
+<div class="main-area">
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-header">
+      <div class="sidebar-title">Roteiros & Bares</div>
+      <div class="sidebar-sub">Escolha uma rota e explore os petiscos do Comida di Buteco 2026</div>
+    </div>
+
+    <div class="search-wrap">
+      <div class="search-inner" id="searchWrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar bar, petisco ou bairro…" autocomplete="off">
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="routes" id="tabRoutes">🗺 Rotas</button>
+      <button class="tab-btn" data-tab="bars" id="tabBars">🍺 Bares</button>
+    </div>
+
+    <div class="panel" id="panelRoutes">
+      <div class="panel-section" id="routeList"></div>
+    </div>
+
+    <div class="panel" id="panelBars" style="display:none">
+      <div id="barListContainer"></div>
+    </div>
+
+  </aside>
+
+  <div id="map"></div>
+  <div class="float-badge"><strong id="countDisplay">105</strong> bares no mapa</div>
+</div>
+
+<script>
+const BARES  = [{"nome": "Alvoroço", "endereco": "Estrada dos Bandeirantes, 7967", "bairro": "Jacarepaguá", "petisco": "Moela abaixo", "descricao": "Uma mistura da tradição porteña com raízes dos nossos botecos tradicionais que se prezam. Empanada de moela com catupiry e chimichurri de alho-poró.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081559/alvoroco_moelaabaixo_capital_2026_joana_1-scaled.jpg", "lat": -22.96951692851297, "lon": -43.41343483270744}, {"nome": "Antônio's Nordestino", "endereco": "R. Ati, 365", "bairro": "Tanque", "petisco": "Caminho da Roça", "descricao": "Base de queijo coalho empanado, coberto com carne-seca desfiada e cream cheese. Servidos com couve crocante e crispy de alho-poró. Acompanha molho agridoce de melado de rapadura flambado na cachaça de jambu.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081609/antoniosnordestino_caminhodaroca_capital_2026_joana_1-scaled.jpg", "lat": -22.921480827433513, "lon": -43.35702460201632}, {"nome": "Armazém São Thiago", "endereco": "R. Áurea, 26", "bairro": "Santa Teresa", "petisco": "Checkup", "descricao": "Almofadinhas recheadas: peito bovino com tomate seco e alho-poró, coração de alcatra com gorgonzola e espinafre e língua bovina ao molho madeira com agrião. Acompanha geleia de vinho.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081617/armazemsaothiago_checkup_capital_2026_joana_1-scaled.jpg", "lat": -22.921134200188376, "lon": -43.18959847689154}, {"nome": "Art Chopp", "endereco": "Estrada Macembu, 63 – 75", "bairro": "Taquara", "petisco": "Que delícia de rabada!", "descricao": "Rabada desfiada e defumada com agrião refogado e polenta frita.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081626/artchopp_quedeliciaderabada_capital_2026_joana_1-scaled.jpg", "lat": -22.92347067475963, "lon": -43.37760263270879}, {"nome": "Baixo Gago", "endereco": "R. Gago Coutinho, 51", "bairro": "Laranjeiras", "petisco": "Porogodó", "descricao": "Cestinhas de massa de pastel assadas, recheadas com costela bovina e alho-poró e carne-seca com alho-poró. Acompanha geleia artesanal de damasco.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081735/baixogago_porogodo_capital_2026_joana_1-scaled.jpg", "lat": -22.93125493620971, "lon": -43.181221305727895}, {"nome": "Bar da Áurea", "endereco": "Ladeira Ari Barroso, 20", "bairro": "Leme", "petisco": "Brasileirinho – Sou brasileiro e não desisto nunca", "descricao": "Uma releitura da feijoada em forma de charuto, acompanhada de um melado de laranja e farofa amarela.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081752/bardaaurea_brasileirinhosoubrasileiroenaodesistonunca_capital_2026_joana_1-scaled.jpg", "lat": -22.960522981549037, "lon": -43.16952144619804}, {"nome": "Bar da Tati", "endereco": "Pça. Serzedelo Correia, 15", "bairro": "Copacabana", "petisco": "Maria Isabel da Tati", "descricao": "Carne-seca em arroz ao molho de tomate, com jerimum, maxixe e bacon. Finalizada com queijo coalho grelhado e acompanhada de farofa crocante de castanhas com couve crispy.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081800/bardatati_mariaisabeldatati_capital_2026_joana_1-scaled.jpg", "lat": -22.969553457711726, "lon": -43.18361963190648}, {"nome": "Bar do Aldo", "endereco": "Rua Ronald de Carvalho, 161", "bairro": "Copacabana", "petisco": "Camarão Folgado", "descricao": "Croquete de camarão com recheio de cream cheese e alho-poró. Servido com molho de ervas apimentado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081809/bardoaldo_camaraofolgado_capital_2026_joana_1-scaled.jpg", "lat": -22.964722316421685, "lon": -43.17717563443724}, {"nome": "Bar do Augusto", "endereco": "Avenida Mem de Sá, 72", "bairro": "Centro", "petisco": "Lá vem ele de novo", "descricao": "Bolinho à mineira, recheado com couve, tutu e costelinha suína. Finalizado com catupiry, pimenta-biquinho e cebola crispy.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081918/bardoaugusto_lavemeledenovo_capital_2026_joana_1-scaled.jpg", "lat": -22.91309644408565, "lon": -43.18120663366901}, {"nome": "Bar do Canedo", "endereco": "R. Barão de Mesquita, 916", "bairro": "Grajaú", "petisco": "Yo no creo en brujas, pero que las hay, las hay", "descricao": "Costela bovina em um creme especial de quatro queijos, servida numa caminha de aipim com tapioca fritos. “Chuva” de couve mineira frita para finalizar!", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081927/bardocanedo_yonocreoenbrujasperoquelashaylashay_capital_2026_joana_1-scaled.jpg", "lat": -22.923792889633923, "lon": -43.25506991209481}, {"nome": "Bar do David", "endereco": "Ladeira Ari Barroso, 66 – Chapéu Mangueira -Loja 3", "bairro": "Leme", "petisco": "Conchas Dell Mare", "descricao": "Conchas de macarrão frito, recheadas de frutos do mar ao alho e óleo e pesto de couve.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/17082210/unknown.jpeg", "lat": -22.9607223763078, "lon": -43.168831805841315}, {"nome": "Bar do Gilson", "endereco": "R. Sousa Franco, 386", "bairro": "Vila Isabel", "petisco": "Vaca Atrevida", "descricao": "Releitura da clássica vaca atolada: creme de aipim com batata-baroa e alho-poró, finalizado com queijo azul, costela bovina desfiada e farofa crocante de bacon.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081944/bardogilson_vacaatrevida_capital_2026_joana_1-scaled.jpg", "lat": -22.915154964373986, "lon": -43.245882983231155}, {"nome": "Bar do Luisinho", "endereco": "R. Dois de Fevereiro, 228", "bairro": "Encantado", "petisco": "Ossinho da Roça", "descricao": "Duas coxinhas verdes de costela suína com massa de brócolis. Uma releitura criativa do clássico brasileiro: coxinha feita com massa de brócolis, recheada com costela suína desfiada, cozida lentamente. Empanada na farinha panko, sendo finalizada com o próprio osso da costela, que serve como cabo e dá um visual marcante e divertido.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081953/bardoluisinho_ossinhodaroca_capital_2026_joana_1-scaled.jpg", "lat": -22.897833282969035, "lon": -43.3014075785152}, {"nome": "Bar do Mariano", "endereco": "R. Professor Valadares, 78", "bairro": "Grajaú", "petisco": "Brasileirinho", "descricao": "Cubos de carnes marinados ao “vinadalho”, com creme de milho e couve refogada. Finalizado com couve crispy, alho torrado e ovo de codorna.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082101/bardomariano_brasileirinho_capital_2026_joana_1-scaled.jpg", "lat": -22.920086240571873, "lon": -43.26351747296295}, {"nome": "Bar do Mineiro", "endereco": "R. Paschoal Carlos Magno, 99", "bairro": "Santa Teresa", "petisco": "Ora Ora que melhora", "descricao": "Coxa de frango recheada com catupiry e ora-pro-nóbis, servida com creme de frango.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082108/bardomineiro_oraoraquemelhora_capital_2026_joana_1-scaled.jpg", "lat": -22.921055001177912, "lon": -43.18690205561481}, {"nome": "Bar do Mozoca", "endereco": "R. Leite Ribeiro, 43", "bairro": "Méier", "petisco": "Delícia do Mozoca", "descricao": "Massa de batata-doce recheada com carne-seca, queijo e brócolis.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082116/bardomozoca_deliciadomozoca_capital_2026_joana_1-scaled.jpg", "lat": -22.90364436946326, "lon": -43.28906845278791}, {"nome": "Bar do Thomaz", "endereco": "Rua Gerônimo Serqueira, 26", "bairro": "Camorim", "petisco": "Do preto gostoso ao branco metido à besta: tamo junto", "descricao": "Caldo de feijão-preto e branco. O feijão-preto acompanha couve crispy e torresmo. O feijão-branco acompanha camarão e alho-poró tostado na manteiga.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082123/bardothomaz_dopretogostosoaobrancometidoabesatamojunto_capital_2026_joana_1-scaled.jpg", "lat": -22.969150848866835, "lon": -43.41542813877386}, {"nome": "Bar do Tino", "endereco": "R. Almirante Alexandrino, 3780", "bairro": "Santa Teresa", "petisco": "Verdura e tino, meu buteco é o destino", "descricao": "Costela suína defumada desfiada com couve mineira refogada com bacon e tiras de aipim frito com queijo ralado e salsa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082123/bardothomaz_dopretogostosoaobrancometidoabesatamojunto_capital_2026_joana_1-scaled.jpg", "lat": -22.934918322999543, "lon": -43.203884677474505}, {"nome": "Bar do Zé Ilha de Paquetá", "endereco": "R. Comandante Guedes de Carvalho, 97", "bairro": "Paquetá", "petisco": "Caldinhos do Zé", "descricao": "Dois caldos: feijoada de camarão com alho-poró, acompanha torradas; caldo de feijão-preto com bacon, linguiça calabresa e cubos de carne. Acompanha farofa de couve e alho.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082240/bardozeilhadepaqueta_caldinhosdoze_capital_2026_joana_1-scaled.jpg", "lat": -22.765863284739705, "lon": -43.10909835936686}, {"nome": "Bar du Barão", "endereco": "R. Castro Barbosa, 36", "bairro": "Grajaú", "petisco": "Barão Vermelho", "descricao": "Bolinhos com massa de feijão vermelho, recheados com carne-seca, queijo manteiga, queijo muçarela e couve manteiga. Acompanha geleia de caju, levemente picante.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082248/bardubarao_baraovermelho_capital_2026_joana_1-scaled.jpg", "lat": -22.923866375652672, "lon": -43.25611364493623}, {"nome": "Bar e Restaurante Elo Perdido", "endereco": "Praça da Bandeira, 317", "bairro": "Praça da Bandeira", "petisco": "Era uma vez um Rabo", "descricao": "Bolinho de rabada com agrião, feito com massa de polenta.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082255/barerestauranteeloperdido_eraumavezumrabo_capital_2026_joana_1-scaled.jpg", "lat": -22.91108100913729, "lon": -43.21517718459739}, {"nome": "Bar Gato de Botas", "endereco": "R. Torres Homem, 118", "bairro": "Vila Isabel", "petisco": "Gato Poró", "descricao": "Dois coxões recheados com costela, queijo e alho-poró, acompanhados de molho de abacaxi.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082303/bargatodebotas_gatoporo_capital_2026_joana_1-scaled.jpg", "lat": -22.913409203998405, "lon": -43.24378306362112}, {"nome": "Bar Luiza", "endereco": "Rua São Francisco Xavier, 68", "bairro": "Tijuca", "petisco": "Pastel Porcopiry", "descricao": "Pastéis recheados com joelho de porco lentamente cozido e desfiado, finalizado com o toque levemente picante da folha de mostarda.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082310/barluiza_pastelporcopiry_capital_2026_joana_1-scaled.jpg", "lat": -22.920222179224904, "lon": -43.22277033680916}, {"nome": "Bar Sambódromo", "endereco": "Avenida Salvador de Sá, 77", "bairro": "Cidade Nova", "petisco": "Porquinho asiático em águas tupiniquins", "descricao": "Guioza de porco com repolho caramelizado no molho de ostra, molho ponzu de tucupi, finalizado com cebolinha, gergelim, pó de camarão e pó de pimenta.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082419/barsambodromo_porquinhoasiaticoemaguastupiniquim_capital_2026_joana_1-scaled.jpg", "lat": -22.912211953744958, "lon": -43.19777878378665}, {"nome": "Bar Tô Legal", "endereco": "Rua Juiz de Fora, 179", "bairro": "Grajaú", "petisco": "Fast-tel tô legal", "descricao": "Pastéis recheados com costela bovina desfiada e agrião.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09081743/bartolegal_festteltolegal_capital_2026_joana_1-scaled.jpg", "lat": -22.924845711529507, "lon": -43.26086427308735}, {"nome": "Bar Victor", "endereco": "R. Riachuelo, 32", "bairro": "Centro", "petisco": "Deu Samba", "descricao": "Massa de aipim crocante, temperada com manteiga de garrafa, salsa e queijo parmesão. Por cima, pasta de cream cheese e alho-poró e, para finalizar, ragu de peito bovino com fraldinha. Com toque de molho de tomate artesanal.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082426/barvictor_deusamba_capital_2026_joana_1-scaled.jpg", "lat": -22.913722730831747, "lon": -43.18157810620913}, {"nome": "Beneh Gastrobar", "endereco": "Rua Dona Maria, 9", "bairro": "Vila Isabel", "petisco": "Boa Vista", "descricao": "Creme aveludado de espinafre e alho confit com mini medalhão de filé-mignon suíno empanado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082433/benehgastrobar_boavista_capital_2026_joana_1-scaled.jpg", "lat": -22.91867097796358, "lon": -43.23628771152091}, {"nome": "Biricutico Bar e Botequim", "endereco": "R. Magalhães Couto, 356", "bairro": "Méier", "petisco": "Pastel do Popeye", "descricao": "Pastel de espinafre com queijo gorgonzola, catupiry e farofa de torresmo.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082439/biricuticobarebotequim_pasteldopopeye_capital_2026_joana_1-scaled.jpg", "lat": -22.901984726680677, "lon": -43.28721010598864}, {"nome": "Biroska do Camarão", "endereco": "R. Antônio Sales, 4", "bairro": "Cacuia", "petisco": "Joelho atrevido", "descricao": "Massa de aipim frito com cobertura de joelho de porco e cebola caramelizada. Acompanha: molho de espinafre.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082446/biroskadocamarao_joelhoatrevido_capital_2026_joana_1-scaled.jpg", "lat": -22.823333456926225, "lon": -43.17843115254175}, {"nome": "Bistrô Aconchego", "endereco": "Rua das Rosas, 1500", "bairro": "Vila Valqueire", "petisco": "Amor de Iza", "descricao": "Trio de tortinhas feitas com massinha de brócolis com queijo, recheadas com: frango com requeijão, costela com barbecue e camarão com alho-poró e cream cheese.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082556/bistroaconchego_amordeiza_capital_2026_joana_1-scaled.jpg", "lat": -22.888836469443703, "lon": -43.365873989674014}, {"nome": "Boemia Social Clube", "endereco": "Av. Oliveira Belo, 1180", "bairro": "Vila da Penha", "petisco": "Poró & Prosa", "descricao": "Pasta de tomate seco com salame, parmesão, alho-poró, manjericão e um toque picante da geleia de pimentão; servido sobre crostini artesanal crocante.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082604/bohemiasocialclube_poroeprosa_capital_2026_joana_1-scaled.jpg", "lat": -22.84119359981195, "lon": -43.305779613074534}, {"nome": "Booze Bar", "endereco": "Av. Mem de Sá, 63", "bairro": "Lapa", "petisco": "Croc Costela", "descricao": "Espeto de costela no bafo envolta por queijo, pesto de rúcula e empanada numa massa dourada e supercrocante. Acompanhada por 3 molhos: ketchup artesanal, mostarda de maçã e pasta de jalapenho.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082612/boozebar_croccostela_capital_2026_joana_1-scaled.jpg", "lat": -22.913336155964146, "lon": -43.18119719566967}, {"nome": "Boteco Bacurau", "endereco": "Avenida Mem de Sá, 175", "bairro": "Lapa", "petisco": "Tacural", "descricao": "Quatro tacos de acelga com carne de sol e queijo coalho.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082619/botecobacurau_tacural_capital_2026_joana_1-scaled.jpg", "lat": -22.91238357531834, "lon": -43.18648898308697}, {"nome": "Boteco Bella Chama", "endereco": "Avenida Churchill, 13", "bairro": "Centro", "petisco": "Costela de cordeiro à Bella Chama", "descricao": "Pedaços de costela de cordeiro servidos com molho de aipo, alho-poró, hortelã e geleia de hortelã cítrica.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082627/botecobellachama_costeladecordeiroabellacama_capital_2026_joana_1-scaled.jpg", "lat": -22.90939639998926, "lon": -43.171767569172665}, {"nome": "Boteco Boca Miúda", "endereco": "Rua Adriano, 235", "bairro": "Méier", "petisco": "Quem conta um agrião, aumenta uma costela", "descricao": "Tiras crocantes de polenta com costela, creme de queijo e vinagrete de agrião. Acompanha molho de pimenta da casa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082736/botecobocamiuda_quemcontaumagriaoaumentaumacostela_capital_2026_joana_1-scaled.jpg", "lat": -22.901823766225032, "lon": -43.289669841951614}, {"nome": "Boteco Brotinho de Copa", "endereco": "Av. Prado Júnior, 78", "bairro": "Copacabana", "petisco": "Um sonho de lombo", "descricao": "Coxinha de lombo de porco assado na pressão, desfiado e refogado com ora-pro-nóbis e bacon fritinho em cubos. Tudo isso em uma tradicional massa de aipim artesanal. Acompanhado de azeite temperado da casa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082745/botecobrotinhodecopa_umsonhodelombo_capital_2026_joana_1-scaled.jpg", "lat": -22.964371620454695, "lon": -43.174603082912355}, {"nome": "Boteco Carioquinha", "endereco": "Av. Gomes Freire, 822", "bairro": "Lapa", "petisco": "Anéis de porco recheado, até os talos", "descricao": "Lombo suíno marinado, recheado com linguiça artesanal, assado e cozido. Servido em anéis com molho do cozimento. Acompanhado de farofa de talos vegetais e batata coberta por queijo gratinado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082754/botecocarioquinha_aneisdeporcoateostalos_capital_2026_joana_1-scaled.jpg", "lat": -22.913923126958448, "lon": -43.182665502743}, {"nome": "Boteko do Cadico", "endereco": "R. Barão de Itaipu, 30", "bairro": "Andaraí", "petisco": "Poró-Popó", "descricao": "Cigarretes recheados, com toque de alho-poró caramelizado e acompanhamentos.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082940/botekodocadico_poropopo_capital_2026_joana_1-scaled.jpg", "lat": -22.926248004531754, "lon": -43.247067316555594}, {"nome": "Boteco do Raoni", "endereco": "Rua Uberaba, 91", "bairro": "Grajaú", "petisco": "Cinco minutinhos sem perder a amizade", "descricao": "Dois bolinhos de carne recheados com queijo, espinafre, cebola e pimenta. Acompanha barbecue de cachaça caseira e 2 bolinhos de batata com funghi secchi, shitake secchi e acelga, acompanhada de teriyaki com manga.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082802/botecodoraoni_cincominutinhossemperderaamizade_capital_2026_joana_1-scaled.jpg", "lat": -22.92441838085659, "lon": -43.25787294639204}, {"nome": "Boteco do Russo", "endereco": "Estrada de Jacarepaguá, 7040", "bairro": "Anil", "petisco": "Costela do Montela", "descricao": "Costela marinada com especiarias, assada por 6 horas, servida com batata calabresa no alecrim, creme de milho e brotos de agrião.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082811/botecodorusso_costeladomontela_capital_2026_joana_1-scaled.jpg", "lat": -22.947408232132783, "lon": -43.33938819804274}, {"nome": "Boteco Vou de Mais", "endereco": "R. Paula Brito, 240", "bairro": "Andaraí", "petisco": "Bananou o Camarão", "descricao": "Banana-da-terra cozida, temperada com alho, cebola e recheada com camarão puxado no azeite com alho-poró, pimentões vermelho e amarelo.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082931/botecovoudemais_bananouocamarao_capital_2026_joana_1-scaled.jpg", "lat": -22.926327237327907, "lon": -43.25335298560236}, {"nome": "Botequim Chega Mais", "endereco": "R. Barata Ribeiro, 247", "bairro": "Copacabana", "petisco": "Dom Felipe de Bacalhau", "descricao": "Bacalhau desfiado com batata amassada, espinafre, cenoura ralada, requeijão e parmesão gratinado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082950/botequimchegamais_domfelipedebacalhau_capital_2026_joana_1-scaled.jpg", "lat": -22.966220621170397, "lon": -43.18185114213152}, {"nome": "Braseiro do Roque", "endereco": "R. Feliciano Pena, 332", "bairro": "Vila da Penha", "petisco": "No coração da VP", "descricao": "Coração de frango assado na brasa servido no pão com pasta de alho, coberto por camada de queijo meia cura derretido e acompanhado de molho da casa e uma salada de repolho roxo, cenoura e aipo.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09082958/braseirodoroque_nocoracaodavp_capital_2026_joana_1-scaled.jpg", "lat": -22.845780151330928, "lon": -43.31250999845655}, {"nome": "Brazuca", "endereco": "Rua Luís Sá, 205", "bairro": "Portuguesa", "petisco": "Baderna", "descricao": "Baderna, um petisco no copo: creme de espinafre, carne de porco desfiada, cubinhos de queijo coalho tostado e um toque melado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083107/brazuca_baderna_capital_2026_joana_1-scaled.jpg", "lat": -22.799571322293342, "lon": -43.20252994611021}, {"nome": "Cabeça de Bagre", "endereco": "R. Sousa Franco, 254 – Casa", "bairro": "Vila Isabel", "petisco": "Maria, me perdi em Tóquio!", "descricao": "Dupla de onigiris com base de arroz japonês, recheados com bisque de camarão, camarões empanados e emulsão de alho frito.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083116/cabecadebagre_mariameperdiemtokyo_capital_2026_joana_1-scaled.jpg", "lat": -22.916367861331192, "lon": -43.24562246681616}, {"nome": "Cachambeer", "endereco": "R. Cachambi, 475", "bairro": "Cachambi", "petisco": "Quem vê cara não vê rabada", "descricao": "Escondidinho de rabada desfiada com agrião, recheado com muçarela, feito com fubá de milho, finalizado com muçarela derretida, pimenta-biquinho e agrião.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083124/cachambeer_quemvecaranaoverabada_capital_2026_joana_1-scaled.jpg", "lat": -22.886551890146624, "lon": -43.276909623999494}, {"nome": "Café e Bar Recreio do Leme", "endereco": "R. Gustavo Sampaio, 410", "bairro": "Leme", "petisco": "Crepe Carioca", "descricao": "Crepe de espinafre com recheio de brócolis, alho-poró, bacon com creme de cenoura com gorgonzola.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083132/cafeebarrecreiodoleme_crepecarioca_capital_2026_joana_1-scaled.jpg", "lat": -22.96246306583693, "lon": -43.16930938343423}, {"nome": "Caju Gastrobar", "endereco": "R. Demétrio Ribeiro, 97 loja C", "bairro": "Copacabana", "petisco": "Espinafraram o Bacalhau", "descricao": "Dadinho de tapioca com bacalhau, com folha de espinafre salteada no azeite e alho, finalizado com vinagrete fresco de espinafre.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083140/cajugastrobar_espinafraramobacalhau_capital_2026_joana_1-scaled.jpg", "lat": -22.962071729966578, "lon": -43.176003530595516}, {"nome": "Cantinho da Gigóia", "endereco": "Alameda das Mangueiras, 7", "bairro": "Ilha da Gigóia", "petisco": "Arquipélago de Sabores", "descricao": "Pastel de moqueca com camarão, lula, polvo e filé de linguado. Acompanha geleia de pimenta feita à base de frutos do mar.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083249/cantinhodagigoia_arquipelagodesabores_capital_2026_joana_1-scaled.jpg", "lat": -23.004191475042077, "lon": -43.30933483678752}, {"nome": "Cantinho do Senado", "endereco": "Rua do Lavradio, 50", "bairro": "Centro", "petisco": "Quebra-Carroça", "descricao": "Um croquete de couve-flor, recheado com queijo coalho, acompanhado de geleia de maçãs e pimenta.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083257/cantinhodosenado_quebracarroca_capital_2026_joana_1-scaled.jpg", "lat": -22.9089579110777, "lon": -43.18364579777566}, {"nome": "Capitania dos Copos", "endereco": "Praia de Tubiacanga, 24", "bairro": "Tubiacanga", "petisco": "Bananada de peixe", "descricao": "Banana frita crocante servida com peixe desfiado e um molho refrescante de agrião.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083306/capitaniadoscopos_bananadadepeixe_capital_2026_joana_1-scaled.jpg", "lat": -22.78423775532486, "lon": -43.22639661614868}, {"nome": "Casarão da Julião", "endereco": "R. Engenheiro Julião Castelo, 165", "bairro": "Méier", "petisco": "Os Causos da Dona Filó", "descricao": "Charutos de espinafre recheados com queijo de cabra, acompanhados de carne ao alho e ervas e torradinhas.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083314/casaraodajuliao_oscausosdadonafilo_capital_2026_joana_1-scaled.jpg", "lat": -22.900787222777076, "lon": -43.27381450360704}, {"nome": "Churraxcou", "endereco": "R. Antônio Storino, 161", "bairro": "Vila da Penha", "petisco": "Larica de Sanduba", "descricao": "Sanduíche de cupim desfiado com maionese de alho, muçarela gratinada e crispy de alho-poró.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083322/churraxcou_laricadesanduba_capital_2026_joana_1-scaled.jpg", "lat": -22.84412399090654, "lon": -43.31171976836613}, {"nome": "Comida de Casa", "endereco": "R. Professor Saldanha, 80", "bairro": "Lagoa", "petisco": "Popeye Atolado", "descricao": "Por fora, uma trouxinha de espinafre “pra fingir que é light”. E, por dentro, uma surpresa: uma vaca atolada raiz, com costela bovina, cozida em caldo de aipim. Tudo isso com catupiry no meio.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083430/comidadecasa_popeyeatolado_capital_2026_joana_1-scaled.jpg", "lat": -22.960646915769384, "lon": -43.204915177872834}, {"nome": "Contemporâneo Lapa", "endereco": "Av. Gomes Freire, 625", "bairro": "Centro", "petisco": "Capadócia", "descricao": "Tutu de feijoada com picadinho carioca, em homenagem a São Jorge e ao Rio de Janeiro.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083438/contemporaneolapa_capadocia_capital_2026_joana_1-scaled.jpg", "lat": -22.912239484022802, "lon": -43.18308827006801}, {"nome": "Crepe & Cevada", "endereco": "Av. do Magistério, 0 – Moneró", "bairro": "Portuguesa", "petisco": "Sertão", "descricao": "Carne de sol refogada na manteiga da terra, acompanhada com feijão tropeiro (feijão-carioquinha com bacon, cebola, couve mineira e farinha da roça).", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083447/crepeecevada_sertao_capital_2026_joana_1-scaled.jpg", "lat": -22.794300983926778, "lon": -43.20158350824887}, {"nome": "Da Pedra", "endereco": "R. Argemiro Bulcão, 33", "bairro": "Saúde", "petisco": "Botecadinha de Frango", "descricao": "O escondidinho de frango com purê de mandioca, recheio de frango desfiado com alho-poró e queijo gratinado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083455/dapedra_botecadinhadefrango_capital_2026_joana_1-scaled.jpg", "lat": -22.898057563575424, "lon": -43.18540147252358}, {"nome": "Deck Bar", "endereco": "Alameda dos Ingás, 190 – Ilha da Gigóia", "bairro": "Barra da Tijuca", "petisco": "Dupla Sensação", "descricao": "Bolinho de arroz com camarão, brócolis e queijo.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083502/deckbar_duplasensacao_capital_2026_joana_1-scaled.jpg", "lat": -23.001278850362368, "lon": -43.30869452497195}, {"nome": "Dida Bar", "endereco": "Rua do Lavradio, 192", "bairro": "Lapa", "petisco": "Ziriguidum da Dida", "descricao": "Tiras de frango douradas, à base de alface e coentro. Finalizadas com a nossa maionese caseira.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083610/didabar_ziriguidumdadida_capital_2026_joana_1-scaled.jpg", "lat": -22.91291675976359, "lon": -43.18193150155732}, {"nome": "Dom Pedro", "endereco": "R. Francisco Manuel, 31", "bairro": "Benfica", "petisco": "Na boca do polvo", "descricao": "Bolinho com massa de polvo, recheado com polvo, alho-poró e bacon, acompanhado de azeite temperado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083617/dompedro_nabocadopolvo_capital_2026_joana_1-scaled.jpg", "lat": -22.893236322763425, "lon": -43.240643702418154}, {"nome": "Empório do Bacalhau", "endereco": "R. Professora Paula Aquiles, 4", "bairro": "Vila da Penha", "petisco": "Costelenta", "descricao": "Polenta cremosa com ragu de costela e agrião.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083625/emporiodobacalhau_costelenta_capital_2026_joana_1-scaled.jpg", "lat": -22.84712118011613, "lon": -43.306732160394496}, {"nome": "Empório Quintana Boteco", "endereco": "R. Capitão Félix, 110 – CADEG", "bairro": "Benfica", "petisco": "Mamma Mia!", "descricao": "Polpetones suínos recheados com cream cheese e alho-poró, molho de tomate com manjericão, gratinados com queijo. Acompanha: torradas da casa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083632/emporioquintana_mammamia_capital_2026_joana_1-scaled.jpg", "lat": -22.89522998670739, "lon": -43.2368308973934}, {"nome": "Empório Santa Oliva", "endereco": "Av. Tenente-Coronel Muniz de Aragão, 26 – Jacarepaguá.", "bairro": "Freguesia", "petisco": "Rock da Olivas", "descricao": "Três bolinhos: massa de batata recheada com rabada e agrião; massa de batata com queijo parmesão recheada de cupim com agrião; massa de cupim assado na cerveja recheada com queijo azul e bacon. Acompanha molho chimichurri defumado com whisky.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083640/emporiosantaoliva_rockdaolivas_capital_2026_joana_1-scaled.jpg", "lat": -22.947464555871658, "lon": -43.33996912590359}, {"nome": "Folia do Boi", "endereco": "R. Cachambi, 253", "bairro": "Cachambi", "petisco": "Deu cupim na panelinha", "descricao": "Cupim com alho laminado, acompanhado de farofa de paio, vinagrete, pimentão vermelho na brasa e alho-poró confitado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083749/foliadoboi_deucupimnapanelinha_capital_2026_joana_1-scaled.jpg", "lat": -22.890130904016125, "lon": -43.27381940053021}, {"nome": "Formigueiro Brasa & Fogão", "endereco": "R. Araguaia, 603", "bairro": "Freguesia", "petisco": "Deu formiga no chucrute", "descricao": "Pulled pork com mix de repolho agridoce.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083756/formigueirobrasaefogao_deuformiganochucrute_2026_joana_1-scaled.jpg", "lat": -22.9367155306025, "lon": -43.34168992748294}, {"nome": "Fregola Pub", "endereco": "R. Geminiano Góis, 43", "bairro": "Freguesia", "petisco": "Onde há couve-flor, eu vou", "descricao": "Escondidinho de couve-flor com carne assada e creme de couve-flor com bacon.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083804/fregolapub_ondehacouvefloreuvou_capital_2026_joana_1-scaled.jpg", "lat": -22.938879786330155, "lon": -43.33514906049115}, {"nome": "Galeto e Picanha", "endereco": "Rua Sá Viana, 148", "bairro": "Grajaú", "petisco": "O boi do Zé", "descricao": "Costela bovina marinada no azeite com verduras e especiarias. Servido com um purê aligot, agrião, pimenta-biquinho e legumes assados.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083812/galetoepicanha_oboidoze_capital_2026_joana_1-scaled.jpg", "lat": -22.926932901990373, "lon": -43.26021908354127}, {"nome": "Galeto na Brasa", "endereco": "R. Dona Cecília, 39", "bairro": "Rio Comprido", "petisco": "Arancini carioca", "descricao": "Croquete de espinafre com risoto de camarão.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083819/galetonabrasa_arancinicarioca_capital_2026_joana_1-scaled.jpg", "lat": -22.92505019653705, "lon": -43.20606174386626}, {"nome": "Gastrô Bar da Família", "endereco": "Rua do Trabalho, 370", "bairro": "Vila da Penha", "petisco": "Combinadinho Suburbano", "descricao": "Farofa de cuscuz marroquino com carne de sol, cebola-roxa, queijo coalho, banana frita, castanha e alho-poró. Acompanha aipim cozido com açafrão e manteiga de garrafa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083926/gastrobardafamilia_combinadinhosuburbano_capital_2026_joana_1-scaled.jpg", "lat": -22.83970304646737, "lon": -43.30625800328429}, {"nome": "Gelados na Brasa", "endereco": "R. Felisbelo Freire, 296", "bairro": "Ramos", "petisco": "Mugido da Rúcula", "descricao": "Croquete de costela bovina com rúcula, marinada em ervas, temperos e cerveja preta, recheada aos três queijos: muçarela, gorgonzola e catupiry.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083934/geladosnabrasa_mugidodarucula_capital_2026_joana_1-scaled.jpg", "lat": -22.849411683079044, "lon": -43.26062323805044}, {"nome": "Guay", "endereco": "R. Almirante Cochrane, 67", "bairro": "Tijuca", "petisco": "Cuadraditos de Espinaca", "descricao": "Dadinhos de tapioca com espinafre, acompanhados de molho de moqueca de camarão e molho de moqueca de peixe.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083940/guay_cuadraditosdeespinaca_capital_2026_joana_1-scaled.jpg", "lat": -22.919614027884723, "lon": -43.22593056730726}, {"nome": "Hora Extra Bar Gourmet", "endereco": "R. Arcozelo, 60", "bairro": "Vila Valqueire", "petisco": "Discostela", "descricao": "Bolinhos de costela e agrião com creme de mandioca.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083948/horaextrabargourmet_discostela_capital_2026_joana_1-scaled.jpg", "lat": -22.8847035218683, "lon": -43.367901786076445}, {"nome": "IL Panino", "endereco": "R. Belfort Roxo, 246", "bairro": "Copacabana", "petisco": "Não é madeira, mas está cheio de cupim", "descricao": "Minissanduíches de cupim com queijo coalho, maionese trufada e rúcula na ciabatta de fermentação natural. Acompanha picles de pepino da casa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09083956/ilpanino_naoemadeiramasestacheiodecupim_capital_2026_joana_1-scaled.jpg", "lat": -22.963543365641893, "lon": -43.17623194318924}, {"nome": "Ilha Gourmet", "endereco": "Alameda Dalton Barreto, 550 – B", "bairro": "Ilha da Gigóia", "petisco": "Caçarolinha da saudade", "descricao": "Costelinha suína desfiada com pimentões confitados no azeite, ervas finas, aipim refogado com brócolis, cebola, salsinha e manteiga de ervas.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084104/ilhagourmet_cacarolinhadasaudade_capital_2026_joana_1-scaled.jpg", "lat": -23.003447393131708, "lon": -43.30922418637705}, {"nome": "Kai", "endereco": "Alameda Dalton Barreto, 550", "bairro": "Ilha da Gigóia", "petisco": "Aquele que vem do mar", "descricao": "Escondidinho de salmão com alho-poró e escondidinho de gorgonzola com rúcula.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084112/kai_aquelequevemdomar_capital_2026_joana_1-scaled.jpg", "lat": -23.003583446811383, "lon": -43.30913906460268}, {"nome": "Kumida di Kasa", "endereco": "R. Tenente Cleto Campelo, 582", "bairro": "Ilha do Governador", "petisco": "Pirulito da Mami", "descricao": "Rocambole de carne moída, recheado com queijo muçarela, bacon e acelga. Acompanha purê de maçã picante, pesto de rúcula e tomate-cereja confitado.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084121/kumidadikasa_pirulitodamami_capital_2026_joana_1-scaled.jpg", "lat": -22.806472194181783, "lon": -43.18227963246924}, {"nome": "Ladeira 7 Bar", "endereco": "Ld. João Homem, 7", "bairro": "Morro da Conceição", "petisco": "Colhido no Morro", "descricao": "São quatro bolinhos rústicos fritos, feitos com ora-pro-nóbis refogada, costelinha bovina desfiada e queijo coalho, servidos com um molho agridoce de goiabada cascão e mostarda escura com pimenta-dedo-de-moça.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084128/ladeira7bar_colhidonomorro_capital_2026_joana_1-scaled.jpg", "lat": -22.897833593700234, "lon": -43.1812444139438}, {"nome": "Leme Light", "endereco": "R. Gustavo Sampaio, 795", "bairro": "Leme", "petisco": "Chiqueirinho Arretado", "descricao": "Três chiqueirinhos de pão sacadura, recheados de pernil desfiado com abacaxi e mix de repolhos, acompanhados de molho arretado de rapadura.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084136/lemelight_chiqueirinhoarretado_capital_2026_joana_1-scaled.jpg", "lat": -22.964078670845154, "lon": -43.17265350119254}, {"nome": "Medina Pressão", "endereco": "R. Medina, 24 – A", "bairro": "Méier", "petisco": "Pulled Pork oriental", "descricao": "Guioza recheada com carne suína (pulled pork) sobre paleta suína desfiada com couve. Acompanha molho de mostarda com mel.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084246/medinapressao_pulledporkoriental_capital_2026_joana_1-scaled.jpg", "lat": -22.899564180103383, "lon": -43.28104581649143}, {"nome": "Miolo", "endereco": "R. General Glicério, 440", "bairro": "Laranjeiras", "petisco": "Língua enrolada", "descricao": "Discos de língua com recheio de gorgonzola e maionese de coentro.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084256/miolo_linguaenrolada_capital_2026_joana_1-scaled.jpg", "lat": -22.942510771727854, "lon": -43.191987711564906}, {"nome": "Noo Cachaçaria", "endereco": "R. Barão de Iguatemi, 358", "bairro": "Praça da Bandeira", "petisco": "NooUmami", "descricao": "Trio de verduras (acelga, brócolis e couve-flor) refogadas no missô com toque agridoce e crocante.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084256/miolo_linguaenrolada_capital_2026_joana_1-scaled.jpg", "lat": -22.913287289003346, "lon": -43.215010197962016}, {"nome": "Novooeste", "endereco": "R. Paschoal Carlos Magno, 90", "bairro": "Santa Teresa", "petisco": "Buquezinho de couve-flor", "descricao": "Floretes de couve-flor crocantes, servidos em buquê, acompanhados da maionese verde da casa e do nosso molho agridoce.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084313/novooeste_buquezinhodecouveflor_capital_2026_joana_1-scaled.jpg", "lat": -22.921130531711295, "lon": -43.18734478678224}, {"nome": "O Segreto", "endereco": "R. Doutor Bulhões, 689 e 695", "bairro": "Engenho de Dentro", "petisco": "Quem com porco se mistura, camarão come!", "descricao": "Bolinho crocante sem massa, de pernil com camarão e alho-poró, acompanhado com pesto de folha de mostarda.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084323/osegreto_quemcomporcosemisturacamaraocome_capital_2026_joana_1-scaled.jpg", "lat": -22.90193546507665, "lon": -43.29798587303499}, {"nome": "On Tap Pub", "endereco": "Rua Major Ávila, 455", "bairro": "Tijuca", "petisco": "Porquinho atolado", "descricao": "Quatro bolinhos de paleta de porco desfiada, com agrião, recheados com queijo provolone, acompanhados de pesto de agrião.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084433/ontappub_porquinhoatolado_capital_2026_joana_1-scaled.jpg", "lat": -22.92001416844596, "lon": -43.2339477360183}, {"nome": "Pastelaria do Lido", "endereco": "Praia José Bonifácio, 59", "bairro": "Paquetá", "petisco": "Porquinho da Ilha", "descricao": "Panelinha com mix de porcos (picanha, pancetta e filé-mignon) desfiados e gratinados, acompanhados de massinha de pastel frita. Acompanhamentos: pesto de rúcula e chutney de abacaxi.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084441/pastelariadolido_porquinhodailha_capital_2026_joana_1-scaled.jpg", "lat": -22.761979127978584, "lon": -43.11010533715682}, {"nome": "Quintal do Peixoto", "endereco": "R. Anita Garibaldi, 60", "bairro": "Copacabana", "petisco": "Tem no meu quintal", "descricao": "Bolinho de kafta empanada na farinha panko, recheado com espinafre e queijo. Acompanha molho de hortelã picante.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084500/quintaldopeixoto_temnomeuquintal_capital_2026_joana_1-scaled.jpg", "lat": -22.968103592629298, "lon": -43.188703973249964}, {"nome": "Quintal DuGraja", "endereco": "R. Caçapava, 2", "bairro": "Grajaú", "petisco": "Rubacão à Moda Quintal", "descricao": "Nosso petisco é uma releitura do Rubacão, prato típico de João Pessoa. Feito com carne seca, feijão-fradinho, queijo coalho, com o tempero típico do quintal DuGraja. Por cima, banana-da-terra grelhada e carne-seca acebolada, finalizado com folhas de rúcula.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084511/quintaldugraja_rubacaoamodaquintal_capital_2026_joana_1-scaled.jpg", "lat": -22.924787284608854, "lon": -43.25699708262834}, {"nome": "Raízes Gastrobar", "endereco": "Estrada dos Três Rios, 470", "bairro": "Freguesia", "petisco": "Senta, que lá vem história", "descricao": "Quatro medalhões de batata temperada empanados, preparados com queijo meia cura e recheados com carne de panela desfiada e agrião. Servidos com bacon no melado de cana e maionese de pimenta da casa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084620/raizesgastrobar_sentaquelavemhistoria_capital_2026_joana_1-scaled.jpg", "lat": -22.938423282654426, "lon": -43.33908019772041}, {"nome": "Reginaldo's Bar", "endereco": "R. João Silva, 162", "bairro": "Olaria", "petisco": "Os Quatro Guardiões do Ceará", "descricao": "Quatro bolinhos recheados com uma mistura de carne de sol desfiada e vegetais típicos do sertão, representando os quatro elementos do brasão do Ceará: farol, pássaro, mar e plantação.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084628/reginaldosbar_osquatroguardioesdoceara_capital_2026_1-scaled.jpg", "lat": -22.848031806527935, "lon": -43.26080527681448}, {"nome": "Restaurante Gaia", "endereco": "Avenida Marechal Henrique Lott, 120", "bairro": "Barra da Tijuca", "petisco": "Croquete de Alheira", "descricao": "Um croquete típico de Portugal, ele é a base de um embutido português defumado e acompanhado por uma maionese de agrião.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084637/restaurantegaia_croquetedealheira_capital_2026_joana_1-scaled.jpg", "lat": -23.002741756780757, "lon": -43.3499816366585}, {"nome": "Restaurante Ilha da Fantasia", "endereco": "Alameda dos Colibris, 1", "bairro": "Ilha da Gigóia", "petisco": "Bobózinho Fantasia", "descricao": "Bobó de frutos do mar com alho-poró.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084646/restauranteilhadafantasia_bobozinhofantasia_capital_2026_joana_1-scaled.jpg", "lat": -23.004327204869607, "lon": -43.31088983758393}, {"nome": "Sabará", "endereco": "R. Almirante Gavião, 11", "bairro": "Tijuca", "petisco": "Escondido que é bão", "descricao": "Dois escondidinhos, um de pernil e o outro de rabada.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084656/sabara_escondidoqueebao_capital_2026_joana_1-scaled.jpg", "lat": -22.9187628692201, "lon": -43.21402564370632}, {"nome": "Selo de Ouro", "endereco": "R. Arthur Bernardes, 58 – B", "bairro": "Catete", "petisco": "Relíquia do Buteco", "descricao": "Três trouxinhas de couve, recheadas com pernil desfiado, acompanhadas de vinagrete de abacaxi e farofa de bacon com castanha.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084808/selodeouro_reliquiadobuteco_capital_2026_joana_1-scaled.jpg", "lat": -22.928158097416045, "lon": -43.17917420205448}, {"nome": "Seu Cristóvão", "endereco": "R. São Cristóvão, 291", "bairro": "São Cristóvão", "petisco": "Meu verde sertão", "descricao": "Feijão-verde, brócolis e carne-seca refogados com catupiry, nata e aipo, finalizados com castanha crocante, broto de coentro e flor comestível.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084817/seucristovao_meuverdesertao_capital_2026_joana_1-scaled.jpg", "lat": -22.904478723075112, "lon": -43.21856779505889}, {"nome": "Sindicato Café e Bar", "endereco": "Rua Joaquim Silva, 98", "bairro": "Lapa", "petisco": "Bêbado de Sabor", "descricao": "Pastéis de angu recheados com um mix de queijos derretidos, servidos com ragu de cupim, folhas de mostarda salteadas e farofa de banana-da-terra.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084826/sindicatocafeebar_bebadodesabor_capital_2026_joana_1-scaled.jpg", "lat": -22.914800594375823, "lon": -43.17918212617514}, {"nome": "Tártaros Bar e Grill", "endereco": "Rua Grajaú, 22", "bairro": "Grajaú", "petisco": "Deu cupim no míi", "descricao": "Cupim defumado lentamente, desmanchando no molho artesanal de cerveja escura e especiarias, servido com creme de milho e finalizado com coleslaw cítrico.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084837/tartarosbaregrill_deucupimnomii_capital_2026_joana_1-scaled.jpg", "lat": -22.922388195693987, "lon": -43.25927093150242}, {"nome": "Tasca do Edgar", "endereco": "Rua Alice, 34", "bairro": "Laranjeiras", "petisco": "O polvo tá lascado", "descricao": "Três casquinhas de polvo em lascas, em uma camada de creme de mariscos, com um toque delicado de catupiry, finalizadas com uma cobertura de crispy de alho-poró e pimenta-biquinho.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084846/tascadoedgar_opolvotalascado_capital_2026_joana_1-scaled.jpg", "lat": -22.93612505529251, "lon": -43.190372063857524}, {"nome": "Tibar", "endereco": "R. Salinópolis, 148", "bairro": "Taquara", "petisco": "Purê de penetrão na costela com agrião", "descricao": "Costela com agrião sobre uma camada de purê de batatas, finalizado com cebola crispy.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09084957/tibartaquara_puredepenetraonacostelacomagriao_capital_2026_joana_1-scaled.jpg", "lat": -22.9176675938101, "lon": -43.38653776461387}, {"nome": "Tio Juca", "endereco": "R. General Espírito Santo Cardoso, 438", "bairro": "Tijuca", "petisco": "Fui prensada e gostei!", "descricao": "Costela bovina de longa cocção, prensada, dourada na chapa e servida sobre base crocante, acompanhada de molho de agrião levemente picante.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09085016/tiojuca_fuiprensadaegostei_capital_2026_joana_1-scaled.jpg", "lat": -22.931712374056257, "lon": -43.24663755978695}, {"nome": "Toca dos Esquilos", "endereco": "R. São Tillon, S/N", "bairro": "Barra da Tijuca", "petisco": "Coxinha terra e mar", "descricao": "Coxinha de massa de arroz com brócolis, recheada com camarão, catupiry e queijo parmesão. Servida sobre uma cama de crispy de couve e cebola, acompanhada de molho teriyaki.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09085026/tocadosesquilos_coxinhaterraemar_capital_2026_joana_1-scaled.jpg", "lat": -23.005014184959, "lon": -43.31506934822643}, {"nome": "Umas e Ostras", "endereco": "R. Barão de Mesquita, 235", "bairro": "Tijuca", "petisco": "Camarão do Popeye", "descricao": "Massa de batata empanada na farinha panko, recheada com camarões refogados no espinafre, acompanhada de molho verde náutico.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09085048/umaseostras_camaraoaopopeye_capital_2026_joana_1-scaled.jpg", "lat": -22.92222826407478, "lon": -43.23255522645972}, {"nome": "Vem Praká", "endereco": "Rua André Rocha, 1896 – B", "bairro": "Taquara", "petisco": "Creme 171 (Golpe de Sabor)", "descricao": "Creme de couve-flor com filé-mignon suíno desfiado e bacon crocante.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09085153/vempraka_creme171golpedesabor_capital_2026_joana_1-scaled.jpg", "lat": -22.930638732802905, "lon": -43.37535845265899}, {"nome": "Vigal Bar", "endereco": "R. Lopo Saraiva, 179", "bairro": "Tanque", "petisco": "Tá pipocando sabores: o espetáculo!", "descricao": "Quatro bolinhos de tapioca granulada com queijo provolone: camarão com alho-poró; fraldinha com agrião; pernil com creme de taioba; calabresa e bacon com couve. Empanados na farinha de pipoca com provolone e bacon, acompanha geleia de abacaxi com hortelã e vinagrete de ervas frescas e chimichurri.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09085159/vigalbar_tapipocandosaboresoespetaculo_capital_2026_joana_1-scaled.jpg", "lat": -22.92644578682891, "lon": -43.35966916803386}, {"nome": "Vila Rica", "endereco": "R. Cândido Mendes, 16", "bairro": "Glória", "petisco": "Bate forte coração", "descricao": "Patê de coração de galinha, temperado com ervas e especiarias, servido com pão empanado na panko e acompanhado de geleia cítrica.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09085205/vilarica_batefortecoracao_capital_2026_joana_1-scaled.jpg", "lat": -22.919167984486734, "lon": -43.1772544264887}, {"nome": "Zinho Bier", "endereco": "Rua São Luiz Gonzaga, 2330", "bairro": "Benfica", "petisco": "Ragu de costela dos sonhos", "descricao": "Ragu de costela no bafo com agrião, acompanhado de palitos crocantes de aipim e pimenta da casa.", "foto": "https://cdb-static-files.s3.amazonaws.com/wp-content/uploads/2026/03/09085210/zinhobier_ragudecosteladossonhos_capital_2026_joana_1-scaled.jpg", "lat": -22.892482371585345, "lon": -43.239600610508994}];
+const ROUTES = [{"id": "zona-sul", "nome": "Zona Sul Carioca", "emoji": "🌊", "cor": "#0077B6", "descricao": "De Copacabana ao Leme, passando pela Lagoa — o circuito mais icônico da cidade", "bairros": "Copacabana · Leme · Lagoa", "nomes": ["Bar do Aldo", "Bar da Tati", "Botequim Chega Mais", "Boteco Brotinho de Copa", "Caju Gastrobar", "IL Panino", "Quintal do Peixoto", "Bar da Áurea", "Bar do David", "Café e Bar Recreio do Leme", "Leme Light", "Comida de Casa"], "bar_ids": [7, 72, 47, 35, 77, 46, 10, 5, 41, 6, 85, 53], "km": 5.7}, {"id": "santa-laranjeiras", "nome": "Santa Teresa & Laranjeiras", "emoji": "🚋", "cor": "#E76F51", "descricao": "Sobe o bondinho, desce pelos bares históricos de Santa Teresa, Laranjeiras e Catete", "bairros": "Santa Teresa · Laranjeiras · Catete · Glória", "nomes": ["Armazém São Thiago", "Bar do Mineiro", "Bar do Tino", "Novooeste", "Baixo Gago", "Miolo", "Tasca do Edgar", "Selo de Ouro", "Vila Rica"], "bar_ids": [2, 81, 14, 103, 92, 4, 96, 79, 17], "km": 6.0}, {"id": "lapa-centro", "nome": "Boêmia do Centro & Lapa", "emoji": "🎶", "cor": "#9B2335", "descricao": "O coração histórico do Rio: Lapa, Centro, Saúde e Cidade Nova num roteiro boêmio", "bairros": "Lapa · Centro · Saúde · Cidade Nova · Morro da Conceição", "nomes": ["Booze Bar", "Boteco Bacurau", "Boteco Carioquinha", "Contemporâneo Lapa", "Dida Bar", "Sindicato Café e Bar", "Bar do Augusto", "Bar Victor", "Boteco Bella Chama", "Cantinho do Senado", "Da Pedra", "Ladeira 7 Bar", "Bar Sambódromo"], "bar_ids": [31, 8, 58, 25, 36, 54, 32, 49, 94, 33, 76, 56, 23], "km": 7.2}, {"id": "tijuca-vila-isabel", "nome": "Tijuca & Vila Isabel", "emoji": "🏟️", "cor": "#2D6A4F", "descricao": "Bairros tradicionais da Zona Norte: Tijuca, Vila Isabel, Andaraí e arredores", "bairros": "Tijuca · Vila Isabel · Andaraí · Praça da Bandeira · Rio Comprido", "nomes": ["Bar Luiza", "Guay", "On Tap Pub", "Sabará", "Tio Juca", "Umas e Ostras", "Bar do Gilson", "Bar Gato de Botas", "Beneh Gastrobar", "Cabeça de Bagre", "Boteko do Cadico", "Boteco Vou de Mais", "Bar e Restaurante Elo Perdido", "Noo Cachaçaria", "Galeto na Brasa"], "bar_ids": [22, 70, 100, 83, 26, 21, 11, 44, 37, 98, 40, 91, 80, 20, 67], "km": 12.4}, {"id": "grajau", "nome": "República do Grajaú", "emoji": "🌿", "cor": "#588157", "descricao": "O bairro com mais bares do concurso! Oito petiscos concentrados nas ruas do Grajaú", "bairros": "Grajaú", "nomes": ["Bar Tô Legal", "Galeto e Picanha", "Bar do Canedo", "Bar do Mariano", "Bar du Barão", "Boteco do Raoni", "Quintal DuGraja", "Tártaros Bar e Grill"], "bar_ids": [24, 66, 38, 86, 19, 9, 95, 13], "km": 1.9}, {"id": "meier-norte", "nome": "Méier & Zona Norte", "emoji": "🏙️", "cor": "#6A0572", "descricao": "O subúrbio raiz: Méier, Cachambi, Benfica e São Cristóvão num roteiro tradicional", "bairros": "Méier · Cachambi · Benfica · São Cristóvão · Encantado · Engenho de Dentro", "nomes": ["Bar do Mozoca", "Biricutico Bar e Botequim", "Boteco Boca Miúda", "Casarão da Julião", "Medina Pressão", "Cachambeer", "Folia do Boi", "Dom Pedro", "Empório Quintana Boteco", "Zinho Bier", "Seu Cristóvão", "Bar do Luisinho", "O Segreto"], "bar_ids": [15, 34, 27, 78, 51, 63, 45, 82, 12, 59, 104, 61, 93], "km": 15.9}, {"id": "zona-oeste", "nome": "Jacarepaguá e Arredores", "emoji": "🌳", "cor": "#B5838D", "descricao": "Jacarepaguá, Freguesia, Taquara e Tanque — bares na zona mais verde do Rio", "bairros": "Jacarepaguá · Freguesia · Taquara · Tanque · Anil · Camorim", "nomes": ["Alvoroço", "Bar do Thomaz", "Fregola Pub", "Formigueiro Brasa & Fogão", "Raízes Gastrobar", "Art Chopp", "Tibar", "Vem Praká", "Antônio's Nordestino", "Vigal Bar", "Empório Santa Oliva", "Boteco do Russo"], "bar_ids": [0, 16, 101, 3, 97, 102, 1, 64, 87, 65, 39, 62], "km": 15.8}, {"id": "vila-da-penha", "nome": "Vila da Penha & Leste", "emoji": "🎯", "cor": "#D4A017", "descricao": "Zona Norte leste: Vila da Penha, Olaria, Ramos e Vila Valqueire", "bairros": "Vila da Penha · Olaria · Ramos · Vila Valqueire", "nomes": ["Boemia Social Clube", "Braseiro do Roque", "Churraxcou", "Empório do Bacalhau", "Gastrô Bar da Família", "Hora Extra Bar Gourmet", "Bistrô Aconchego", "Reginaldo's Bar", "Gelados na Brasa"], "bar_ids": [30, 68, 52, 42, 60, 88, 69, 29, 71], "km": 18.7}, {"id": "barra-gigoia", "nome": "Barra & Ilha da Gigóia", "emoji": "🏝️", "cor": "#0096C7", "descricao": "Praias da Barra e a charmosa Ilha da Gigóia — o roteiro mais descolado do Rio", "bairros": "Barra da Tijuca · Ilha da Gigóia", "nomes": ["Restaurante Gaia", "Toca dos Esquilos", "Cantinho da Gigóia", "Deck Bar", "Ilha Gourmet", "Kai", "Restaurante Ilha da Fantasia"], "bar_ids": [89, 99, 90, 48, 74, 73, 57], "km": 4.5}, {"id": "ilhas", "nome": "Circuito das Ilhas", "emoji": "⚓", "cor": "#023E8A", "descricao": "Uma aventura de barca: Paquetá, Ilha do Governador, Tubiacanga, Portuguesa e Cacuia", "bairros": "Paquetá · Ilha do Governador · Tubiacanga · Portuguesa · Cacuia", "nomes": ["Bar do Zé Ilha de Paquetá", "Pastelaria do Lido", "Kumida di Kasa", "Capitania dos Copos", "Brazuca", "Crepe & Cevada", "Biroska do Camarão"], "bar_ids": [18, 84, 75, 28, 43, 55, 50], "km": 18.3}];
+
+// ── Mapa de bar → rota ────────────────────────────────────
+const barRoute = {};
+ROUTES.forEach(r => r.bar_ids.forEach(id => { barRoute[id] = r; }));
+
+// ── MAP ───────────────────────────────────────────────────
+const map = L.map('map', { center: [-22.935, -43.27], zoom: 12, zoomControl: true, preferCanvas: false });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OSM &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+// ── Icons ─────────────────────────────────────────────────
+function makeIcon(cor, dim = false, num = null) {
+  const opacity = dim ? 0.22 : 1;
+  const inner = num !== null
+    ? `<text x="16" y="20" font-size="9" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="700">${num}</text>`
+    : `<circle cx="16" cy="16" r="5" fill="rgba(255,255,255,.9)"/>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40" opacity="${opacity}">
+    <path d="M16 0C7.163 0 0 7.163 0 16c0 10.667 16 24 16 24S32 26.667 32 16C32 7.163 24.837 0 16 0z" fill="${cor}" stroke="white" stroke-width="1.5"/>
+    ${inner}
+  </svg>`;
+  return L.divIcon({ html: svg, className: '', iconSize: [32,40], iconAnchor: [16,40], popupAnchor: [0,-44] });
+}
+
+// ── Popup HTML ─────────────────────────────────────────────
+function popupHTML(b, idx) {
+  const r = barRoute[idx];
+  const badgeStyle = r ? `background:${r.cor}` : 'background:#555';
+  const badgeLabel = r ? `${r.emoji} ${r.nome}` : 'Sem rota';
+  const fotoEl = b.foto && b.foto !== 'None'
+    ? `<img class="popup-img" src="${b.foto}" alt="${b.petisco}" loading="lazy" onerror="this.outerHTML='<div class=popup-img-placeholder style=background:linear-gradient(135deg,#1a4a2e,#2d7a4f)>🍽️</div>'">`
+    : `<div class="popup-img-placeholder" style="background:linear-gradient(135deg,#1a4a2e,#2d7a4f)">🍽️</div>`;
+  const orderNum = r ? (r.bar_ids.indexOf(idx) + 1) : '';
+  const addr = [b.endereco, b.bairro].filter(Boolean).join(', ');
+  return `${fotoEl}
+  <div class="popup-body">
+    <span class="popup-route-badge" style="${badgeStyle}">${badgeLabel}${orderNum ? ` · Parada ${orderNum}` : ''}</span>
+    <div class="popup-bar-name">${b.nome}</div>
+    <div class="popup-petisco-nome">${b.petisco}</div>
+    <div class="popup-desc">${b.descricao}</div>
+    <div class="popup-addr">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      ${addr}, Rio de Janeiro
+    </div>
+  </div>`;
+}
+
+// ── Markers ────────────────────────────────────────────────
+const markers = [];
+const layerGroup = L.layerGroup().addTo(map);
+
+BARES.forEach((b, i) => {
+  if (!b.lat || !b.lon) return;
+  const r = barRoute[i];
+  const cor = r ? r.cor : '#555';
+  const m = L.marker([b.lat, b.lon], { icon: makeIcon(cor) })
+    .bindPopup(popupHTML(b, i), { maxWidth: 300, minWidth: 300, className: '' });
+  m._barIdx = i;
+  m._baseCor = cor;
+  m.on('mouseover', () => { if (!m._dim) m.setIcon(makeIcon(cor)); });
+  m.on('popupopen', () => m.setIcon(makeIcon(cor)));
+  m.on('popupclose', () => m.setIcon(makeIcon(cor, m._dim)));
+  layerGroup.addLayer(m);
+  markers.push(m);
+});
+
+function updateCount() {
+  document.getElementById('countDisplay').textContent = markers.filter(m => layerGroup.hasLayer(m)).length;
+}
+
+// ── Active route state ─────────────────────────────────────
+let activeRoute = null;
+
+function selectRoute(routeId) {
+  if (activeRoute === routeId) {
+    // Deselect
+    activeRoute = null;
+    document.querySelectorAll('.route-card').forEach(c => c.classList.remove('active'));
+    markers.forEach(m => {
+      m._dim = false;
+      m.setIcon(makeIcon(m._baseCor, false));
+      if (!layerGroup.hasLayer(m)) layerGroup.addLayer(m);
+    });
+    updateCount();
+    return;
+  }
+  activeRoute = routeId;
+  document.querySelectorAll('.route-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.id === routeId);
+  });
+
+  const r = ROUTES.find(r => r.id === routeId);
+  const activeSet = new Set(r.bar_ids);
+
+  markers.forEach((m, i) => {
+    const inRoute = activeSet.has(m._barIdx);
+    const orderNum = inRoute ? (r.bar_ids.indexOf(m._barIdx) + 1) : null;
+    m._dim = !inRoute;
+    m.setIcon(makeIcon(m._baseCor, !inRoute, inRoute ? orderNum : null));
+  });
+
+  // Fit map to route
+  const pts = r.bar_ids.map(id => [BARES[id].lat, BARES[id].lon]);
+  map.fitBounds(pts, { padding: [60, 60], maxZoom: 15 });
+  updateCount();
+}
+
+function flyToBar(barIdx) {
+  const b = BARES[barIdx];
+  map.flyTo([b.lat, b.lon], 16, { duration: .7 });
+  setTimeout(() => markers.find(m => m._barIdx === barIdx)?.openPopup(), 750);
+}
+
+// ── Render route list ──────────────────────────────────────
+const routeListEl = document.getElementById('routeList');
+ROUTES.forEach(r => {
+  const card = document.createElement('div');
+  card.className = 'route-card';
+  card.dataset.id = r.id;
+  card.innerHTML = `
+    <div class="route-card-header">
+      <div class="route-emoji">${r.emoji}</div>
+      <div class="route-info">
+        <div class="route-name">${r.nome}</div>
+        <div class="route-bairros">${r.bairros}</div>
+      </div>
+      <div class="route-meta">
+        <span class="route-km">${r.km} km</span>
+        <span class="route-count">${r.bar_ids.length} bares</span>
+      </div>
+      <div class="route-color-dot" style="background:${r.cor}"></div>
+    </div>
+    <div class="route-expanded">
+      <div class="route-desc">${r.descricao}</div>
+      <ul class="route-bar-list">
+        ${r.bar_ids.map((bid, j) => `
+          <li class="route-bar-item" data-bar="${bid}">
+            <div class="rbl-num" style="background:${r.cor}">${j+1}</div>
+            <span class="rbl-name">${BARES[bid].nome}</span>
+            <span class="rbl-bairro">${BARES[bid].bairro}</span>
+          </li>`).join('')}
+      </ul>
+    </div>`;
+  card.addEventListener('click', e => {
+    if (e.target.closest('.route-bar-item')) {
+      const bid = parseInt(e.target.closest('.route-bar-item').dataset.bar);
+      flyToBar(bid);
+      return;
+    }
+    selectRoute(r.id);
+  });
+  routeListEl.appendChild(card);
+});
+
+// ── Render bar list ────────────────────────────────────────
+const barListEl = document.getElementById('barListContainer');
+[...BARES].sort((a,b)=>a.nome.localeCompare(b.nome,'pt')).forEach(b => {
+  const origIdx = BARES.indexOf(b);
+  const r = barRoute[origIdx];
+  const cor = r ? r.cor : '#555';
+  const div = document.createElement('div');
+  div.className = 'bar-list-item';
+  div.innerHTML = `
+    <div class="bli-dot" style="background:${cor}"></div>
+    <div class="bli-info">
+      <div class="bli-nome">${b.nome}</div>
+      <div class="bli-sub">${b.petisco} · ${b.bairro}</div>
+    </div>`;
+  div.addEventListener('click', () => flyToBar(origIdx));
+  barListEl.appendChild(div);
+});
+
+// ── Tabs ────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('panelRoutes').style.display = tab==='routes' ? '' : 'none';
+    document.getElementById('panelBars').style.display   = tab==='bars'   ? '' : 'none';
+  });
+});
+
+// ── Search ─────────────────────────────────────────────────
+const searchInput    = document.getElementById('searchInput');
+const searchDropdown = document.getElementById('searchDropdown');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  searchDropdown.innerHTML = '';
+  if (!q) { searchDropdown.classList.remove('open'); return; }
+
+  const hits = BARES.map((b,i)=>({b,i}))
+    .filter(({b}) => b.nome.toLowerCase().includes(q) || b.petisco.toLowerCase().includes(q) || b.bairro.toLowerCase().includes(q))
+    .slice(0, 9);
+
+  if (!hits.length) {
+    searchDropdown.innerHTML = '<div class="sd-item"><div class="sd-item-name" style="color:#666">Nenhum resultado</div></div>';
+    searchDropdown.classList.add('open'); return;
+  }
+  hits.forEach(({b, i}) => {
+    const r = barRoute[i];
+    const d = document.createElement('div');
+    d.className = 'sd-item';
+    d.innerHTML = `<div class="sd-item-name">${b.nome}</div>
+                   <div class="sd-item-sub">${b.petisco} · ${b.bairro}${r?' · '+r.nome:''}</div>`;
+    d.addEventListener('click', () => {
+      searchDropdown.classList.remove('open');
+      searchInput.value = '';
+      flyToBar(i);
+    });
+    searchDropdown.appendChild(d);
+  });
+  searchDropdown.classList.add('open');
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#searchWrap')) searchDropdown.classList.remove('open');
+});
+
+// ── Mobile sidebar ─────────────────────────────────────────
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+updateCount();
+</script>
+</body>
+</html>
